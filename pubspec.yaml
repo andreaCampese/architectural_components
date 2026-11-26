@@ -1,6 +1,6 @@
 name: architectural_components
 description: Classi base MVVM per le app Flutter (BaseScreenState, BaseViewModel, UiRequest, layer di loader e blocco input).
-version: 1.0.0
+version: 1.1.0
 publish_to: none
 
 environment:
@@ -11,6 +11,10 @@ dependencies:
   flutter:
     sdk: flutter
   provider: ^6.1.5+1
+  app_result:
+    git:
+      url: https://github.com/andreaCampese/app_result.git
+      ref: main
 
 dev_dependencies:
   flutter_test:

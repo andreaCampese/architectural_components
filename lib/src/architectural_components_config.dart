@@ -7,4 +7,8 @@ abstract final class ArchitecturalComponents {
   /// Default: `debugPrint`. Nel progetto, collegalo al logger:
   /// `ArchitecturalComponents.onWarning = (m) => MobileLoggerManager().log.w(m);`
   static void Function(String message) onWarning = debugPrint;
+
+  /// Gestore globale degli errori. Imposta in `main()` un'implementazione di
+  /// [FailureHandler] se i ViewModel usano `consume` con `Result`.
+  static FailureHandler? failureHandler;
 }

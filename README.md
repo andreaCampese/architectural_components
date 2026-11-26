@@ -8,6 +8,7 @@ Classi base dell'architettura MVVM per le app Flutter mobile: una Screen è serv
 
 - Dart `^3.6.0`, Flutter `>=3.27.0` (usa `Color.withValues` e `PopScope.onPopInvokedWithResult`).
 - `provider` `^6.1.2`.
+- `app_result` (package separato, Dart puro).
 
 ## Installazione (dipendenza da git)
 
@@ -42,6 +43,27 @@ GoRouter(
 );
 ```
 
+## Gestione degli errori (`Result`)
+
+Il package usa `app_result` (Dart puro). I ViewModel consumano un `Result` con `consume`:
+
+```dart
+Future<void> onCarica() async {
+  final result = await runWithProgress(() => _repository.carica());
+  await consume<List<Item>>(
+    result,
+    onSuccess: (items) { _items = items; notifyListeners(); },
+    onFailure: (error) { /* logica specifica della screen; opzionale */ },
+  );
+}
+```
+
+Gli errori trasversali (sessione scaduta, aggiornamento forzato, manutenzione) passano prima da un `FailureHandler` implementato dall'app e registrato una sola volta:
+
+```dart
+ArchitecturalComponents.failureHandler = AppFailureHandler();
+```
+
 ## API pubblica
 
 | Simbolo | Ruolo |
@@ -52,6 +74,8 @@ GoRouter(
 | `ArchitecturalLayers` | Layer di loader e blocco input |
 | `EdgeSwipeBackGuard` | Swipe-back iOS quando il pop è bloccato |
 | `ArchitecturalComponents.onWarning` | Hook per le anomalie non fatali |
+| `BaseViewModel.consume` / `presentFailure` | Consuma un `Result` (stati + errori globali); presentazione generica di un errore |
+| `FailureHandler` | Interfaccia dell'app per errori trasversali e presentazione generica |
 
 Regole d'uso, template e migrazione: nei documenti/skill dell'architettura (non in questo package).
 

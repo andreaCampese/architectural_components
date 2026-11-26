@@ -109,6 +109,64 @@ class BaseViewModel extends ChangeNotifier {
   }
 
   // ---------------------------------------------------------------------------
+  // Consumo di Result
+  // ---------------------------------------------------------------------------
+
+  /// Consuma un [Result] trattando tutti e tre gli stati.
+  ///
+  /// - [Success]: chiama [onSuccess].
+  /// - [Warning]: chiama [onWarning]; se manca, segnala l'anomalia a
+  ///   [ArchitecturalComponents.onWarning] e prosegue con [onSuccess].
+  /// - [Failure]: l'errore passa PRIMA da `FailureHandler.handleGlobal`
+  ///   (sessione scaduta, aggiornamento forzato, manutenzione: gestiti in un
+  ///   punto solo). Se è gestito, si ferma. Altrimenti chiama [onFailure];
+  ///   se manca, usa [presentFailure].
+  ///
+  /// Non fa nulla se il ViewModel è già stato disposto.
+  @protected
+  Future<void> consume<T>(
+    Result<T> result, {
+    required FutureOr<void> Function(T data) onSuccess,
+    FutureOr<void> Function(T data, AppWarning anomaly)? onWarning,
+    FutureOr<void> Function(AppError error)? onFailure,
+  }) async {
+    if (!_mounted) return;
+    switch (result) {
+      case Success(:final data):
+        await onSuccess(data);
+      case Warning(:final data, :final anomaly):
+        if (onWarning != null) {
+          await onWarning(data, anomaly);
+        } else {
+          ArchitecturalComponents.onWarning('[$runtimeType] anomalia non gestita: $anomaly');
+          await onSuccess(data);
+        }
+      case Failure(:final error):
+        final handler = ArchitecturalComponents.failureHandler;
+        if (handler != null && await handler.handleGlobal(error)) return;
+        if (!_mounted) return;
+        if (onFailure != null) {
+          await onFailure(error);
+        } else {
+          presentFailure(error);
+        }
+    }
+  }
+
+  /// Presenta un errore in modo generico tramite `FailureHandler.presentError`.
+  /// Da usare come ramo di default in un `onFailure` che gestisce solo alcuni
+  /// errori specifici. Senza un `FailureHandler` registrato segnala l'anomalia.
+  @protected
+  void presentFailure(AppError error) {
+    final handler = ArchitecturalComponents.failureHandler;
+    if (handler == null) {
+      ArchitecturalComponents.onWarning('[$runtimeType] nessun FailureHandler registrato: errore $error non presentato');
+      return;
+    }
+    handler.presentError(error);
+  }
+
+  // ---------------------------------------------------------------------------
   // Ciclo di vita
   // ---------------------------------------------------------------------------
 
